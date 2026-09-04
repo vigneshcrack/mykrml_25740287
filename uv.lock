@@ -701,10 +701,11 @@ wheels = [
 
 [[package]]
 name = "mykrml-25740287"
-version = "0.1.5"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "pandas" },
+    { name = "requests" },
     { name = "scikit-learn" },
 ]
 
@@ -717,6 +718,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "pandas", specifier = "==2.2.3" },
+    { name = "requests", specifier = ">=2.34.2" },
     { name = "scikit-learn", specifier = ">=1.9.0" },
 ]
 

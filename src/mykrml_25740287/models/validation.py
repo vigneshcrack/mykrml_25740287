@@ -48,3 +48,48 @@ def split_sets_by_player(
         X_val,
         y_val,
     )
+
+
+
+
+def split_sets_by_date(
+    features,
+    target,
+    val_ratio=0.15,
+    test_ratio=0.15,
+):
+    """Create a chronological train-validation-test split.
+
+    Assumes `features` and `target` are already sorted oldest-to-newest.
+    Splitting is done by position, not shuffling, so validation and test
+    always come strictly after training in time — this avoids leaking
+    future information into the model.
+
+    Parameters
+    ----------
+    features : pandas.DataFrame
+    target : pandas.Series
+    val_ratio, test_ratio : float
+        Proportion of rows to allocate to validation and test sets.
+
+    Returns
+    -------
+    tuple
+        X_train, y_train, X_val, y_val, X_test, y_test
+    """
+    n = len(features)
+
+    test_size = int(n * test_ratio)
+    val_size = int(n * val_ratio)
+    train_size = n - val_size - test_size
+
+    X_train = features.iloc[:train_size].copy()
+    y_train = target.iloc[:train_size].copy()
+
+    X_val = features.iloc[train_size:train_size + val_size].copy()
+    y_val = target.iloc[train_size:train_size + val_size].copy()
+
+    X_test = features.iloc[train_size + val_size:].copy()
+    y_test = target.iloc[train_size + val_size:].copy()
+
+    return X_train, y_train, X_val, y_val, X_test, y_test
