@@ -1,5 +1,7 @@
-"""Validation utilities for player-season classification."""
+"""Validation and data-splitting utilities (grouped, chronological and purged splits)."""
 
+import numpy as np
+import pandas as pd
 from sklearn.model_selection import StratifiedGroupKFold
 
 
@@ -93,3 +95,45 @@ def split_sets_by_date(
     y_test = target.iloc[train_size + val_size:].copy()
 
     return X_train, y_train, X_val, y_val, X_test, y_test
+
+def chronological_split_with_gap(dates, val_ratio=0.15, test_ratio=0.15, gap_days=7):
+    """Purged chronological train/validation/test split for (panel) time series.
+
+    Splits on the sorted *unique* dates, so every token in a long panel is cut at the
+    same calendar boundary. ``gap_days`` dates are dropped before the validation and
+    before the test period, because a target looking ``gap_days`` ahead from the last
+    training rows would otherwise overlap the next period (label leakage).
+
+    Parameters
+    ----------
+    dates : array-like of datetime
+        Date of every row (repeated values allowed for panels).
+    val_ratio, test_ratio : float
+        Share of unique dates assigned to validation and test.
+    gap_days : int, default 7
+        Number of unique dates purged before each later period (the forecast horizon).
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        Boolean masks ``(train_mask, val_mask, test_mask)`` aligned with ``dates``.
+    """
+    dates = pd.to_datetime(pd.Series(dates)).reset_index(drop=True)
+    unique = np.sort(dates.unique())
+    n = len(unique)
+    n_test = round(n * test_ratio)
+    n_val = round(n * val_ratio)
+    if n - n_test - n_val - 2 * gap_days <= 0:
+        raise ValueError("Not enough dates for the requested split and gap")
+
+    test_start = n - n_test
+    val_start = test_start - n_val
+    test_dates = unique[test_start:]
+    val_dates = unique[val_start : test_start - gap_days]
+    train_dates = unique[: val_start - gap_days]
+
+    return (
+        dates.isin(train_dates).to_numpy(),
+        dates.isin(val_dates).to_numpy(),
+        dates.isin(test_dates).to_numpy(),
+    )

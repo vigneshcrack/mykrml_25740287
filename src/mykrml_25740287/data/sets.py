@@ -1,4 +1,4 @@
-"""Reusable dataset utilities for Advanced Machine Learning AT1."""
+"""Reusable dataset utilities (AT1-AT3): loading, target separation and saving sets."""
 
 from pathlib import Path
 
@@ -87,7 +87,31 @@ def save_sets(
 
     for filename, dataset in datasets.items():
         if dataset is not None:
+            if not isinstance(dataset, (pd.DataFrame, pd.Series)):
+                dataset = pd.DataFrame(dataset)  # also accept numpy arrays
             dataset.to_csv(
                 path / filename,
                 index=False,
             )
+
+
+def load_sets(path="../data/processed"):
+    """Load the sets written by ``save_sets``.
+
+    Returns
+    -------
+    tuple
+        ``X_train, y_train, X_val, y_val, X_test, y_test`` as DataFrames (y as Series);
+        a set whose file does not exist is returned as ``None``.
+    """
+    path = Path(path)
+    names = ["X_train", "y_train", "X_val", "y_val", "X_test", "y_test"]
+    loaded = []
+    for name in names:
+        file = path / f"{name}.csv"
+        if not file.exists():
+            loaded.append(None)
+            continue
+        df = pd.read_csv(file)
+        loaded.append(df.iloc[:, 0] if name.startswith("y_") else df)
+    return tuple(loaded)
